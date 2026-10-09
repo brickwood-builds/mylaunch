@@ -55,6 +55,13 @@ body{background:#f4f5f6;min-height:100vh;padding:20px 24px;font-family:-apple-sy
 .tile-icon{display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 .tile-icon img{width:65%;height:65%;object-fit:contain}
 .tile-label{color:#555;text-align:center;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile.trunc:hover{z-index:20}
+.tile.trunc:hover::after{content:attr(data-full);position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);background:#2b2f33;color:#fff;font-size:12px;line-height:1.35;padding:6px 10px;border-radius:7px;width:max-content;max-width:220px;text-align:center;white-space:normal;z-index:60;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:tipIn .15s ease .3s both}
+@keyframes tipIn{from{opacity:0;transform:translate(-50%,-3px)}to{opacity:1;transform:translate(-50%,0)}}
+.edit-mode .tile.trunc:hover::after{display:none}
+.tile.trunc.tip-l:hover::after{left:0;transform:none;animation-name:tipInL}
+.tile.trunc.tip-r:hover::after{left:auto;right:0;transform:none;animation-name:tipInL}
+@keyframes tipInL{from{opacity:0;translate:0 -3px}to{opacity:1;translate:0 0}}
 .tdots{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;opacity:0;transition:opacity 0.15s;cursor:pointer;background:rgba(255,255,255,0.9);z-index:3}
 .tdots span{width:3px;height:3px;background:#888;border-radius:50%;display:block}
 .tdots:hover{background:#f0f8ec}
@@ -422,7 +429,22 @@ function render(){
     cont.appendChild(sd);
   });
   document.getElementById('page').classList.toggle('edit-mode',editMode);
+  markTruncated();
 }
+
+// Show the full name on hover only when a tile's label is cut off
+function markTruncated(){
+  document.querySelectorAll('#sections .tile').forEach(tile=>{
+    const lbl=tile.querySelector('.tile-label');if(!lbl)return;
+    const cut=lbl.scrollWidth>lbl.clientWidth+1;
+    tile.classList.toggle('trunc',cut);
+    if(cut)tile.dataset.full=lbl.textContent;else delete tile.dataset.full;
+    if(cut){const r=tile.getBoundingClientRect(),c=(r.left+r.right)/2;
+      tile.classList.toggle('tip-l',c<120);
+      tile.classList.toggle('tip-r',window.innerWidth-c<120);}
+  });
+}
+window.addEventListener('resize',()=>{clearTimeout(window._mt);window._mt=setTimeout(markTruncated,150);});
 
 function makeTile(t,si,ti,sz){
   const el=document.createElement('div');
